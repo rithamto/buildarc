@@ -1,6 +1,8 @@
 import 'package:ardennes/libraries/drawing/drawing_catalog_loader.dart';
 import 'package:ardennes/models/drawings/drawings_catalog_data.dart';
 import 'package:ardennes/models/projects/project_metadata.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'drawings_catalog_event.dart';
@@ -81,6 +83,24 @@ class DrawingsCatalogBloc
           displayedItems: drawingsCatalog.drawingItems,
           uiState: savedUiState,
         ));
+        User? currentUser = FirebaseAuth.instance.currentUser;
+        FirebaseFirestore.instance
+            .collection("home_screens")
+            .doc(
+                "project_${drawingsCatalog.projectId}_user_${currentUser?.uid}")
+            .set({
+          "project": drawingsCatalog.projectId,
+          "user": currentUser?.uid,
+          "drawings": List.generate(
+            drawingsCatalog.drawingItems.length,
+            (index) => {
+              "title": drawingsCatalog.drawingItems[index].title,
+              "subtitle": drawingsCatalog.drawingItems[index].discipline,
+              "drawingThumbnailUrl":
+                  drawingsCatalog.drawingItems[index].smallThumbnailUrl
+            },
+          ),
+        });
       } else {
         emit(DrawingsCatalogFetchErrorState("Project id doesn't exist"));
       }
